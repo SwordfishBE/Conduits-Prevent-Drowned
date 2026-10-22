@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "conduits_prevent_drowned",
+  "version": "${version}",
+  "name": "Conduits Prevent Drowned",
+  "description": "Prevents natural and spawner drowned spawns near players with Conduit Power, without Collective.",
+  "authors": ["SwordfishBE"],
+  "contact": {
+    "homepage": "https://github.com/SwordfishBE/Conduits-Prevent-Drowned",
+    "sources": "https://github.com/SwordfishBE/Conduits-Prevent-Drowned",
+    "email": "swordfishbe@locutus.net"
+  },
+  "license": "AGPL-3.0",
+  "icon": "assets/conduits_prevent_drowned/icon.png",
+  "environment": "*",
+  "entrypoints": { "main": ["net.conduits_prevent_drowned.ConduitsPreventDrowned"] },
+  "mixins": ["conduits_prevent_drowned.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabric-api": ">=0.163.0+26.3"
+  },
+  "breaks": { "conduitspreventdrowned": "*" },
+  "custom": { "fabric-suggests": { "environment": "server" } }
+}
