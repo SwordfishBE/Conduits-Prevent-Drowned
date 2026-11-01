@@ -30,6 +30,28 @@ import net.minecraft.world.level.SpawnData;
 
 public class ConduitGameTests {
     @GameTest
+    public void minecraftVersionRange(GameTestHelper h) throws Exception {
+        var dependency = net.fabricmc.loader.api.FabricLoader.getInstance()
+                .getModContainer(ConduitsPreventDrowned.ID).orElseThrow().getMetadata().getDependencies()
+                .stream().filter(entry -> entry.getModId().equals("minecraft")).findFirst().orElseThrow();
+        for (String raw : List.of("26.4-snapshot-6", "26.4-snapshot-7", "26.4-snapshot-10",
+                "26.4-pre-1", "26.4-rc-1", "26.4")) {
+            var normalized = net.fabricmc.loader.impl.game.minecraft.McVersionLookup.normalizeVersion(raw,
+                    net.fabricmc.loader.impl.game.minecraft.McVersionLookup.getRelease(raw));
+            h.assertTrue(dependency.matches(net.fabricmc.loader.api.Version.parse(normalized)),
+                    "Metadata must accept " + raw + " (" + normalized + ")");
+        }
+        for (String raw : List.of("26.3", "26.4-snapshot-1", "26.4-snapshot-5",
+                "26.4.1-pre-1", "26.4.1", "26.5-snapshot-1", "26.5", "27.1")) {
+            var normalized = net.fabricmc.loader.impl.game.minecraft.McVersionLookup.normalizeVersion(raw,
+                    net.fabricmc.loader.impl.game.minecraft.McVersionLookup.getRelease(raw));
+            h.assertFalse(dependency.matches(net.fabricmc.loader.api.Version.parse(normalized)),
+                    "Metadata must reject " + raw + " (" + normalized + ")");
+        }
+        h.succeed();
+    }
+
+    @GameTest
     public void reloadChangesProtectionAndPreservesInvalidConfig(GameTestHelper h) throws Exception {
         var path = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir()
                 .resolve(ConduitsPreventDrowned.ID + ".json");
