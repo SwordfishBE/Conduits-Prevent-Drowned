@@ -30,6 +30,49 @@ import net.minecraft.world.level.SpawnData;
 
 public class ConduitGameTests {
     @GameTest
+    public void guiConfigSaveIsValidatedAndPreservesFiles(GameTestHelper h) throws Exception {
+        var dir = Files.createTempDirectory("conduits-gui-save-");
+        var path = dir.resolve("settings.json");
+        try {
+            var config = new ConfigStore(path);
+            config.saveRange(32);
+            h.assertTrue(config.range() == 32 && config.readForEditing() == 32, "GUI save creates file and updates runtime");
+            Files.writeString(path, "{\"preventDrownedInRange\":64,\"unknown\":{\"preserve\":true}}");
+            h.assertTrue(config.readForEditing() == 64 && config.range() == 32,
+                    "Opening editor reads disk without changing running setting");
+            config.saveRange(0);
+            h.assertTrue(config.range() == 0, "GUI can disable prevention");
+            var saved = com.google.gson.JsonParser.parseString(Files.readString(path)).getAsJsonObject();
+            h.assertTrue(saved.getAsJsonObject("unknown").get("preserve").getAsBoolean(), "GUI preserves unknown options");
+            String valid = Files.readString(path);
+            for (int invalid : new int[] {-1, 401}) {
+                boolean failed = false;
+                try { config.saveRange(invalid); } catch (IllegalArgumentException expected) { failed = true; }
+                h.assertTrue(failed && config.range() == 0 && Files.readString(path).equals(valid),
+                        "Invalid GUI value must not change disk or runtime");
+            }
+            Files.writeString(path, "{broken");
+            boolean failed = false;
+            try { config.saveRange(80); } catch (RuntimeException expected) { failed = true; }
+            h.assertTrue(failed && config.range() == 0 && Files.readString(path).equals("{broken"),
+                    "A file damaged after opening the editor must not be overwritten");
+            Files.delete(path);
+            Files.createDirectory(path);
+            failed = false;
+            try { config.saveRange(80); } catch (java.io.IOException expected) { failed = true; }
+            h.assertTrue(failed && config.range() == 0, "Failed disk save must not publish new runtime value");
+            Files.delete(path);
+            config.saveRange(400);
+            config.reload();
+            h.assertTrue(config.range() == 400, "GUI save survives reload");
+            try (var entries = Files.list(dir)) {
+                h.assertTrue(entries.count() == 1, "GUI save leaves no temporary files");
+            }
+        } finally { Files.deleteIfExists(path); Files.deleteIfExists(dir); }
+        h.succeed();
+    }
+
+    @GameTest
     public void minecraftVersionRange(GameTestHelper h) throws Exception {
         var dependency = net.fabricmc.loader.api.FabricLoader.getInstance()
                 .getModContainer(ConduitsPreventDrowned.ID).orElseThrow().getMetadata().getDependencies()
